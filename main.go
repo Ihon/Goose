@@ -3,11 +3,15 @@ package main
 import (
     "fmt"
     "log"
-    // "gomymath/libraries"
+    "math/rand"
+    "os"
+    "time"
+    "gomymath/models"
+    "gomymath/service"
+    "gomymath/system"
+
     // "github.com/kataras/iris/v12"
     // "github.com/kataras/iris/v12/mvc"
-    // "gorm.io/driver/postgres"
-    // "gorm.io/gorm"
 )
 
 // mediaType := map[string]string {
@@ -29,16 +33,27 @@ import (
 // }
 
 func main() {
-    // var animeId uint32 = 1
-    // 100787
-    // var data anime = collyAnime(animeId)
-    config, err := LoadConfig("config")
-fmt.Printf("%+v\n", config)
+    config, err := system.LoadConfig("config")
     if err != nil {
         log.Fatal("? Could not load environment variables", err)
     }
+    system.ConnectDB(&config)
 
-    ConnectDB(&config)
+    // 100787
+    for i := uint32(1); i <= 100787; i++ {
+        var data service.Anime = service.CollyAnime(i)
 
-    // fmt.Printf("%+v\n", data)
+        if (data.Title == "") {
+            fmt.Println(i, "Incomplete file data")
+        } else {
+fmt.Printf("%+v\n", data)
+            os.Exit(0)
+        }
+
+        coolDown := rand.Intn(15)
+        time.Sleep(time.Duration(coolDown) * time.Second)
+    }
+
+    // system.DB.AutoMigrate(&models.Anime{})
+    // fmt.Println("? Migration complete")
 }

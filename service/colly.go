@@ -1,13 +1,16 @@
-package main
+package service
 
 import (
-    "strings"
-    "strconv"
-    "github.com/gocolly/colly"
+    "fmt"
+	"log"
+	"net/url"
+	"strconv"
+	"strings"
+	"github.com/gocolly/colly"
 )
 
-type anime struct {
-    AnimedbId int
+type Anime struct {
+    AnimedbId uint32
     Title string
     KanaTitle string
     imageUrl string
@@ -21,7 +24,7 @@ type anime struct {
     Production string
 }
 
-func collyAnime(id uint32) anime {
+func CollyAnime(id uint32) Anime {
     informationMap := make(map[int]string)
     informationType := map[string]string {
         "初出日": "ReleaseDate",
@@ -33,7 +36,9 @@ func collyAnime(id uint32) anime {
         "制作": "Production",
     }
     countN, countD := 0, 0
-    rawData := anime{}
+    rawData := Anime{}
+    rawData.AnimedbId = id
+
     // 在colly中使用 Collector 這類物件 來做事情
     c := colly.NewCollector()
 
@@ -43,11 +48,11 @@ func collyAnime(id uint32) anime {
     //     fmt.Println(string(r.Body))
     // })
 
-    c.OnHTML(".title > h1:nth-child(1)", func(e *colly.HTMLElement) {
+    c.OnHTML(".title > h1", func(e *colly.HTMLElement) {
         rawData.Title = strings.TrimSpace(e.Text)
     })
 
-    c.OnHTML(".title > h2:nth-child(1)", func(e *colly.HTMLElement) {
+    c.OnHTML(".title > h2", func(e *colly.HTMLElement) {
         rawData.KanaTitle = strings.TrimSpace(e.Text)
     })
 
@@ -103,7 +108,20 @@ func collyAnime(id uint32) anime {
         r.Headers.Set("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/86.0.4240.75 Safari/537.36")
     })
 
-    c.Visit("https://db.animedb.jp/index.php/searchdata/?mode=view&id=100611")
+    animedbUrl, err := url.Parse("https://db.animedb.jp/index.php/searchdata/?mode=view&id=100611")
+    if err != nil {
+        log.Fatal(err)
+    }
+
+    pid := string(strconv.FormatUint(uint64(id), 10))
+    if (len(pid) < 5) {
+       pid = fmt.Sprintf("%05d", id);
+    }
+    paramate := animedbUrl.Query()
+    paramate.Set("id", pid)
+    animedbUrl.RawQuery = paramate.Encode()
+
+    c.Visit(animedbUrl.String())
 
     return rawData
 }
