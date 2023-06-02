@@ -13,7 +13,8 @@ type Anime struct {
     AnimedbId uint32
     Title string
     KanaTitle string
-    imageUrl string
+    ImageUrl string
+    ReleaseMedia string
     OriginalMedia string
     ReleaseDate string
     ReleaseWay string
@@ -35,6 +36,7 @@ func CollyAnime(id uint32) Anime {
         "監督": "Director",
         "制作": "Production",
     }
+    basicSelecter := ".kihon > dd"
     countN, countD := 0, 0
     rawData := Anime{}
     rawData.AnimedbId = id
@@ -57,15 +59,15 @@ func CollyAnime(id uint32) Anime {
     })
 
     c.OnHTML(".pick > img:nth-child(1)", func(e *colly.HTMLElement) {
-        rawData.imageUrl = strings.TrimSpace(e.Attr("src"))
+        rawData.ImageUrl = strings.TrimSpace(e.Attr("src"))
     })
 
     c.OnHTML("img.sakuhin_icon:nth-child(2)", func(e *colly.HTMLElement) {
-        rawData.imageUrl = strings.TrimSpace(e.Attr("src"))
+        rawData.ReleaseMedia = strings.TrimSpace(e.Attr("src"))
     })
 
     c.OnHTML("img.sakuhin_icon:nth-child(3)", func(e *colly.HTMLElement) {
-        rawData.imageUrl = strings.TrimSpace(e.Attr("src"))
+        rawData.OriginalMedia = strings.TrimSpace(e.Attr("src"))
     })
 
     c.OnHTML(".kihon > dt", func(e *colly.HTMLElement) {
@@ -78,7 +80,21 @@ func CollyAnime(id uint32) Anime {
         }
     })
 
-    c.OnHTML(".kihon > dd", func(e *colly.HTMLElement) {
+    if (countN == 0) {
+        c.OnHTML(".kihon > dl > dt", func(e *colly.HTMLElement) {
+            countN++
+            informationName := strings.TrimSpace(e.Text)
+            informationName = strings.Replace(informationName, "■", "", -1)
+            name, isExist := informationType[informationName]
+            if (isExist) {
+                informationMap[countN] = name
+            }
+        })
+
+        basicSelecter = ".kihon > dl > dd"
+    }
+
+    c.OnHTML(basicSelecter, func(e *colly.HTMLElement) {
         countD++
         informationData := strings.TrimSpace(e.Text)
         name := informationMap[countD]

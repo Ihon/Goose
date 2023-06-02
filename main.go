@@ -1,17 +1,18 @@
 package main
 
 import (
-    "fmt"
-    "log"
-    "math/rand"
-    "os"
-    "time"
-    "gomymath/models"
-    "gomymath/service"
-    "gomymath/system"
-
-    // "github.com/kataras/iris/v12"
-    // "github.com/kataras/iris/v12/mvc"
+	"fmt"
+    "reflect"
+	"log"
+    "encoding/json"
+	"math/rand"
+	"os"
+	"time"
+	"gomymath/models"
+	"gomymath/service"
+	"gomymath/system"
+	// "github.com/kataras/iris/v12"
+	// "github.com/kataras/iris/v12/mvc"
 )
 
 // mediaType := map[string]string {
@@ -39,21 +40,68 @@ func main() {
     }
     system.ConnectDB(&config)
 
+    // system.DB.AutoMigrate(&models.Anime{})
+    // fmt.Println("? Migration complete")
+
+    animes := []*models.Anime{}
     // 100787
-    for i := uint32(1); i <= 100787; i++ {
-        var data service.Anime = service.CollyAnime(i)
+    for i := uint32(11); i <= 100; i++ {
+        data := service.Anime(service.CollyAnime(i))
 
         if (data.Title == "") {
             fmt.Println(i, "Incomplete file data")
-        } else {
-fmt.Printf("%+v\n", data)
-            os.Exit(0)
+            continue
         }
 
+        values := reflect.ValueOf(data)
+        types := values.Type()
+
+        animeData := models.Anime{}
+        for i := 0; i < values.NumField(); i++ {
+            name := types.Field(i).Name
+            switch name {
+                case "AnimedbId":
+                   animeData.ID = values.Field(i).Interface().(uint32)
+                case "Title":
+                    animeData.Title = values.Field(i).Interface().(string)
+                case "KanaTitle":
+                    animeData.KanaTitle = values.Field(i).Interface().(string)
+                case "ImageUrl":
+                    animeData.ImageUrl = values.Field(i).Interface().(string)
+                case "ReleaseMedia":
+                    animeData.ReleaseMedia = values.Field(i).Interface().(string)
+                case "OriginalMedia":
+                    animeData.OriginalMedia = values.Field(i).Interface().(string)
+                case "ReleaseDate":
+                    animeData.ReleaseDate = values.Field(i).Interface().(string)
+                case "ReleaseWay":
+                    animeData.ReleaseWay = values.Field(i).Interface().(string)
+                case "RunningTime":
+                    animeData.RunningTime = values.Field(i).Interface().(int)
+                case "Episodes":
+                    animeData.Episodes = values.Field(i).Interface().(int)
+                case "OriginalAuthor":
+                    animeData.OriginalAuthor = values.Field(i).Interface().(string)
+                case "Director":
+                    animeData.Director = values.Field(i).Interface().(string)
+                case "Production":
+                    animeData.Production = values.Field(i).Interface().(string)
+                default:
+                    return
+            }
+        }
+        animes = append(animes, &animeData)
+// fmt.Printf("%+v\n", animeData)
         coolDown := rand.Intn(15)
         time.Sleep(time.Duration(coolDown) * time.Second)
     }
+// prettyStruct(animes)
+    RowsAffected := models.BatchInsertAnime(animes)
+fmt.Println(RowsAffected)
+os.Exit(0)
+}
 
-    // system.DB.AutoMigrate(&models.Anime{})
-    // fmt.Println("? Migration complete")
+func prettyStruct(intef interface{}) {
+    output, _ := json.MarshalIndent(intef, "", "\t")
+    fmt.Printf("%s \n", output)
 }
