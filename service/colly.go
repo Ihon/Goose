@@ -1,8 +1,9 @@
 package service
 
 import (
-    "fmt"
+    // "fmt"
 	"log"
+    "regexp"
 	"net/url"
 	"strconv"
 	"strings"
@@ -25,7 +26,7 @@ type Anime struct {
     Production string
 }
 
-func CollyAnime(id uint32) Anime {
+func CollyAnime(id string) Anime {
     informationMap := make(map[int]string)
     informationType := map[string]string {
         "初出日": "ReleaseDate",
@@ -39,7 +40,11 @@ func CollyAnime(id uint32) Anime {
     basicSelecter := ".kihon > dd"
     countN, countD := 0, 0
     rawData := Anime{}
-    rawData.AnimedbId = id
+    id64, err := strconv.ParseUint(strings.TrimLeft(id, "0*"), 10, 32)
+    if err != nil {
+        panic(err)
+    }
+    rawData.AnimedbId = uint32(id64)
 
     // 在colly中使用 Collector 這類物件 來做事情
     c := colly.NewCollector()
@@ -129,15 +134,136 @@ func CollyAnime(id uint32) Anime {
         log.Fatal(err)
     }
 
-    pid := string(strconv.FormatUint(uint64(id), 10))
-    if (len(pid) < 5) {
-       pid = fmt.Sprintf("%05d", id);
-    }
     paramate := animedbUrl.Query()
-    paramate.Set("id", pid)
+    paramate.Set("id", id)
     animedbUrl.RawQuery = paramate.Encode()
 
     c.Visit(animedbUrl.String())
 
     return rawData
+}
+
+func CollyGojuon(index uint) (string, int)  {
+    gojuonList := []string{
+        "/index.php/searchdata/?mode=50on&word=ア",
+        "/index.php/searchdata/?mode=50on&word=イ",
+        "/index.php/searchdata/?mode=50on&word=ウ",
+        "/index.php/searchdata/?mode=50on&word=エ",
+        "/index.php/searchdata/?mode=50on&word=オ",
+        "/index.php/searchdata/?mode=50on&word=カ",
+        "/index.php/searchdata/?mode=50on&word=キ",
+        "/index.php/searchdata/?mode=50on&word=ク",
+        "/index.php/searchdata/?mode=50on&word=ケ",
+        "/index.php/searchdata/?mode=50on&word=コ",
+        "/index.php/searchdata/?mode=50on&word=ガ",
+        "/index.php/searchdata/?mode=50on&word=ギ",
+        "/index.php/searchdata/?mode=50on&word=グ",
+        "/index.php/searchdata/?mode=50on&word=ゲ",
+        "/index.php/searchdata/?mode=50on&word=ゴ",
+        "/index.php/searchdata/?mode=50on&word=サ",
+        "/index.php/searchdata/?mode=50on&word=シ",
+        "/index.php/searchdata/?mode=50on&word=ス",
+        "/index.php/searchdata/?mode=50on&word=セ",
+        "/index.php/searchdata/?mode=50on&word=ソ",
+        "/index.php/searchdata/?mode=50on&word=ザ",
+        "/index.php/searchdata/?mode=50on&word=ジ",
+        "/index.php/searchdata/?mode=50on&word=ズ",
+        "/index.php/searchdata/?mode=50on&word=ゼ",
+        "/index.php/searchdata/?mode=50on&word=ゾ",
+        "/index.php/searchdata/?mode=50on&word=タ",
+        "/index.php/searchdata/?mode=50on&word=チ",
+        "/index.php/searchdata/?mode=50on&word=ツ",
+        "/index.php/searchdata/?mode=50on&word=テ",
+        "/index.php/searchdata/?mode=50on&word=ト",
+        "/index.php/searchdata/?mode=50on&word=ダ",
+        "/index.php/searchdata/?mode=50on&word=ヂ",
+        "/index.php/searchdata/?mode=50on&word=ヅ",
+        "/index.php/searchdata/?mode=50on&word=デ",
+        "/index.php/searchdata/?mode=50on&word=ド",
+        "/index.php/searchdata/?mode=50on&word=ナ",
+        "/index.php/searchdata/?mode=50on&word=ニ",
+        "/index.php/searchdata/?mode=50on&word=ヌ",
+        "/index.php/searchdata/?mode=50on&word=ネ",
+        "/index.php/searchdata/?mode=50on&word=ノ",
+        "/index.php/searchdata/?mode=50on&word=ハ",
+        "/index.php/searchdata/?mode=50on&word=ヒ",
+        "/index.php/searchdata/?mode=50on&word=フ",
+        "/index.php/searchdata/?mode=50on&word=ヘ",
+        "/index.php/searchdata/?mode=50on&word=ホ",
+        "/index.php/searchdata/?mode=50on&word=バ",
+        "/index.php/searchdata/?mode=50on&word=ビ",
+        "/index.php/searchdata/?mode=50on&word=ブ",
+        "/index.php/searchdata/?mode=50on&word=べ",
+        "/index.php/searchdata/?mode=50on&word=ボ",
+        "/index.php/searchdata/?mode=50on&word=パ",
+        "/index.php/searchdata/?mode=50on&word=ピ",
+        "/index.php/searchdata/?mode=50on&word=プ",
+        "/index.php/searchdata/?mode=50on&word=ペ",
+        "/index.php/searchdata/?mode=50on&word=ポ",
+        "/index.php/searchdata/?mode=50on&word=マ",
+        "/index.php/searchdata/?mode=50on&word=ミ",
+        "/index.php/searchdata/?mode=50on&word=ム",
+        "/index.php/searchdata/?mode=50on&word=メ",
+        "/index.php/searchdata/?mode=50on&word=モ",
+        "/index.php/searchdata/?mode=50on&word=ヤ",
+        "/index.php/searchdata/?mode=50on&word=ユ",
+        "/index.php/searchdata/?mode=50on&word=ヨ",
+        "/index.php/searchdata/?mode=50on&word=ラ",
+        "/index.php/searchdata/?mode=50on&word=リ",
+        "/index.php/searchdata/?mode=50on&word=ル",
+        "/index.php/searchdata/?mode=50on&word=レ",
+        "/index.php/searchdata/?mode=50on&word=ロ",
+        "/index.php/searchdata/?mode=50on&word=ワ",
+        "/index.php/searchdata/?mode=50on&word=ヲ",
+        "/index.php/searchdata/?mode=50on&word=ン",
+    }
+
+    var url strings.Builder
+    url.WriteString("https://db.animedb.jp")
+    url.WriteString(gojuonList[index])
+
+    itemNumber := string("")
+    c := colly.NewCollector()
+    c.OnHTML(".single > b:nth-child(3)", func(e *colly.HTMLElement) {
+        itemNumber = strings.TrimSpace(e.Text)
+    })
+
+    c.OnRequest(func(r *colly.Request) {
+        r.Headers.Set("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/86.0.4240.75 Safari/537.36")
+    })
+
+    c.Visit(url.String())
+
+    number, _ := strconv.Atoi(itemNumber)
+
+    return url.String(), number
+}
+
+func CollyGojuonItem(gojuonUrl string, pageNumber int) []string {
+    itemNumbers := []string{}
+
+    animedbUrl, err := url.Parse(gojuonUrl)
+    if err != nil {
+        log.Fatal(err)
+    }
+
+    paramate := animedbUrl.Query()
+    paramate.Add("pg", strconv.Itoa(pageNumber))
+    animedbUrl.RawQuery = paramate.Encode()
+
+    c := colly.NewCollector()
+    c.OnHTML("div.appendifsc > dl > a", func(e *colly.HTMLElement) {
+        onclickAttr := strings.TrimSpace(e.Attr("onclick"))
+        re := regexp.MustCompile("id=([\\d]+)")
+        itemId := re.FindStringSubmatch(onclickAttr)
+        itemNumbers = append(itemNumbers, itemId[1])
+    })
+
+    c.OnRequest(func(r *colly.Request) {
+        r.Headers.Set("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/86.0.4240.75 Safari/537.36")
+    })
+
+    c.Visit(animedbUrl.String())
+
+    return itemNumbers
 }

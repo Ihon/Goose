@@ -25,12 +25,12 @@ type Anime struct {
 }
 
 func InsertAnime(anime Anime) int64 {
-    result := system.DB.Clauses(clause.OnConflict{DoNothing: true}).Create(&anime)
+    result := system.DB.Clauses(clause.Insert{Modifier: "IGNORE"}).Create(&anime)
     return result.RowsAffected
 }
 
 func BatchInsertAnime(anime []*Anime) int64 {
-    result := system.DB.Clauses(clause.OnConflict{DoNothing: true}).Create(anime)
+    result := system.DB.Clauses(clause.Insert{Modifier: "IGNORE"}).Create(anime)
     return result.RowsAffected
 }
 
