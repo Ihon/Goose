@@ -5,11 +5,11 @@ import (
 )
 
 type Config struct {
-    DBHost         string `mapstructure:"POSTGRES_HOST"`
-    DBUserName     string `mapstructure:"POSTGRES_USERNAME"`
-    DBUserPassword string `mapstructure:"POSTGRES_PASSWORD"`
-    DBName         string `mapstructure:"POSTGRES_DBNAME"`
-    DBPort         string `mapstructure:"POSTGRES_PORT"`
+    DBHost         string `mapstructure:"MARIADB_HOST"`
+    DBUserName     string `mapstructure:"MARIADB_USERNAME"`
+    DBUserPassword string `mapstructure:"MARIADB_PASSWORD"`
+    DBName         string `mapstructure:"MARIADB_DBNAME"`
+    DBPort         string `mapstructure:"MARIADB_PORT"`
 }
 
 func LoadConfig(path string) (config Config, err error) {
